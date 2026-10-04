@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en" data-theme="dusk">
+<head>
+  <script>try { var s = JSON.parse(localStorage.getItem('dusk-planner-settings')) || {}; document.documentElement.dataset.theme = s.theme === 'photo' ? 'dusk' : (s.theme || localStorage.getItem('dusk-planner-theme') || 'dusk'); } catch (e) {}</script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sprout">
+  <meta name="theme-color" content="#171312">
+  <title>Sprout Planner</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="bg"><div class="bg-photo" id="bgPhoto"></div><div class="bg-dim" id="bgDim"></div></div>
+
+  <div class="app">
+    <header class="topbar">
+      <div class="nav-date">
+        <button class="icon-btn" data-action="prev" aria-label="Previous">
+          <svg viewBox="0 0 24 24"><path d="M14.5 6l-6 6 6 6"/></svg>
+        </button>
+        <button class="pill" data-action="today" data-i18n="common.today">Today</button>
+        <button class="icon-btn" data-action="next" aria-label="Next">
+          <svg viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+
+      <div class="spacer"></div>
+
+      <button class="pill" id="decorBtn" data-action="decorate">
+        <svg viewBox="0 0 24 24"><path d="M4 20l1.2-4.4L15.8 5a2 2 0 0 1 2.8 0l.4.4a2 2 0 0 1 0 2.8L8.4 18.8z"/><path d="M14 7l3 3"/><path d="M19 15.5l.7 1.6 1.6.7-1.6.7-.7 1.6-.7-1.6-1.6-.7 1.6-.7z" class="fill"/></svg>
+        <span data-i18n="decor.button">Decorate</span>
+      </button>
+      <button class="pill" id="newBtn" data-action="new">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        <span data-i18n="common.new">New</span>
+      </button>
+      <button class="icon-btn" data-action="settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" class="fill"><circle cx="6" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18" cy="12" r="1.7"/></svg>
+      </button>
+    </header>
+
+    <main id="main"></main>
+  </div>
+
+  <!-- bottom navigation -->
+  <nav class="tabbar" id="tabbar">
+    <button data-view="todo"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4.5"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg><span data-i18n="tab.todo">To-do</span></button>
+    <button data-view="day"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="4"/><path d="M4 10h16M9 3v4M15 3v4"/></svg><span data-i18n="tab.day">Day</span></button>
+    <button data-view="week"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="4"/><path d="M9.2 5v14M14.8 5v14"/></svg><span data-i18n="tab.week">Week</span></button>
+    <button data-view="month"><svg viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="4"/><path d="M3.5 9.5h17M3.5 14.5h17M9.2 4.5v15M14.8 4.5v15"/></svg><span data-i18n="tab.month">Month</span></button>
+    <button data-view="habits"><svg viewBox="0 0 24 24"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5.3 1.6 1 2.5 2 3-.3-3 .2-5.7 1-8.5z"/></svg><span data-i18n="tab.habits">Habits</span></button>
+    <button data-view="lists"><svg viewBox="0 0 24 24"><rect x="4" y="3.5" width="7" height="17" rx="2"/><path d="M13.5 5.5l3.4-.9a1.5 1.5 0 0 1 1.8 1.1l3 11.2a1.5 1.5 0 0 1-1 1.8l-3.4.9"/><path d="M6.5 7.5h2"/></svg><span data-i18n="tab.lists">Lists</span></button>
+  </nav>
+
+  <!-- decorate toolbar -->
+  <div class="decorbar" id="decorBar">
+    <div class="seg tools" id="decorTools">
+      <button data-tool="select" data-i18n-aria="decor.select"><svg viewBox="0 0 24 24"><path d="M8 12V5.5a1.5 1.5 0 0 1 3 0V11m0-1.5V4a1.5 1.5 0 0 1 3 0v6m0-4.5a1.5 1.5 0 0 1 3 0V12m0-3.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1.5a6 6 0 0 1-4.6-2.2L4.6 15a1.6 1.6 0 0 1 2.4-2.1L8 14"/></svg></button>
+      <button data-tool="pen" data-i18n-aria="decor.pen"><svg viewBox="0 0 24 24"><path d="M4 20l1.2-4.4L15.8 5a2 2 0 0 1 2.8 0l.4.4a2 2 0 0 1 0 2.8L8.4 18.8z"/><path d="M14 7l3 3"/></svg></button>
+      <button data-tool="hl" data-i18n-aria="decor.hl"><svg viewBox="0 0 24 24"><path d="M9 14l-3 3v3h3l3-3"/><path d="M9 14l7.5-7.5a2.1 2.1 0 0 1 3 3L12 17z"/><path d="M4 21h7" opacity=".5"/></svg></button>
+      <button data-tool="eraser" data-i18n-aria="decor.eraser"><svg viewBox="0 0 24 24"><path d="M8.5 19.5L4 15a2 2 0 0 1 0-2.8l8.2-8.2a2 2 0 0 1 2.8 0L20 9a2 2 0 0 1 0 2.8l-7.7 7.7zM20 19.5H8.5"/><path d="M9 9.5l5.5 5.5"/></svg></button>
+    </div>
+    <div class="inks" id="inks"></div>
+    <div class="seg sizes" id="sizes">
+      <button data-size="0"><i style="width:4px;height:4px"></i></button>
+      <button data-size="1"><i style="width:7px;height:7px"></i></button>
+      <button data-size="2"><i style="width:11px;height:11px"></i></button>
+    </div>
+    <button class="icon-btn" data-action="sticker-picker" data-i18n-aria="decor.stickers"><svg viewBox="0 0 24 24"><path d="M20 12.5V7a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h5.5z"/><path d="M12.5 20c0-4.1 3.4-7.5 7.5-7.5"/><circle cx="9" cy="10" r="1" class="fill"/><circle cx="15" cy="10" r="1" class="fill"/><path d="M9 14.5c1 1 2.3 1.4 3.5 1.2"/></svg></button>
+    <button class="icon-btn" data-action="undo" data-i18n-aria="decor.undo"><svg viewBox="0 0 24 24"><path d="M9 7L4.5 11.5 9 16"/><path d="M5 11.5h9a5.5 5.5 0 0 1 0 11h-2"/></svg></button>
+    <button class="icon-btn" id="fingerBtn" data-action="finger" data-i18n-aria="decor.finger"><svg viewBox="0 0 24 24"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V12l3.6.8a2.5 2.5 0 0 1 1.9 2.8l-.6 3.6A2 2 0 0 1 14.9 21H11a2 2 0 0 1-1.6-.8L6 15.6a1.5 1.5 0 0 1 2.3-1.9L9 14.5"/></svg></button>
+    <button class="pill strong" data-action="decor-done" data-i18n="common.done">Done</button>
+  </div>
+
+  <!-- task / event sheet -->
+  <div id="sheet" class="overlay" hidden>
+    <form id="sheetForm" class="sheet" autocomplete="off">
+      <div class="sheet-head">
+        <button type="button" class="pill ghost" data-action="close" data-i18n="common.cancel">Cancel</button>
+        <h2 id="sheetTitle">New</h2>
+        <button type="submit" class="pill strong" data-i18n="common.save">Save</button>
+      </div>
+      <input class="field big" name="ttl" data-i18n-ph="item.titlePh" enterkeyhint="done">
+      <textarea class="field" name="notes" rows="2" data-i18n-ph="item.notes"></textarea>
+      <div class="group">
+        <label class="row"><span data-i18n="item.someday"></span><input type="checkbox" name="someday" class="switch"></label>
+        <label class="row" id="dateRow"><span data-i18n="item.date"></span><input type="date" name="date" class="field inline"></label>
+        <label class="row" id="timedRow"><span data-i18n="item.timed"></span><input type="checkbox" name="timed" class="switch"></label>
+        <div class="row" id="timeRow">
+          <span data-i18n="item.time"></span>
+          <span class="times">
+            <input type="time" name="start" class="field inline" step="300">
+            <span class="dash">–</span>
+            <input type="time" name="end" class="field inline" step="300">
+          </span>
+        </div>
+        <label class="row" id="repeatRow">
+          <span data-i18n="item.repeat"></span>
+          <select name="repeat" class="field inline">
+            <option value="none" data-i18n="repeat.none"></option>
+            <option value="daily" data-i18n="repeat.daily"></option>
+            <option value="weekdays" data-i18n="repeat.weekdays"></option>
+            <option value="weekly" data-i18n="repeat.weekly"></option>
+          </select>
+        </label>
+      </div>
+      <div class="group">
+        <div class="row"><span data-i18n="item.colour"></span><span class="swatches" id="swatches"></span></div>
+        <label class="row"><span data-i18n="item.list"></span><input name="list" class="field inline wide" placeholder="@Sport" list="listOptions"></label>
+        <label class="row"><span data-i18n="item.tags"></span><input name="tags" class="field inline wide" placeholder="#Cardio, #Morning"></label>
+      </div>
+      <button type="button" class="danger" id="deleteBtn" data-action="delete-item" data-i18n="common.delete">Delete</button>
+      <datalist id="listOptions"></datalist>
+    </form>
+  </div>
+
+  <!-- habit sheet -->
+  <div id="habitSheet" class="overlay" hidden>
+    <form id="habitForm" class="sheet" autocomplete="off">
+      <div class="sheet-head">
+        <button type="button" class="pill ghost" data-action="close" data-i18n="common.cancel">Cancel</button>
+        <h2 id="habitTitle"></h2>
+        <button type="submit" class="pill strong" data-i18n="common.save">Save</button>
+      </div>
+      <div class="name-row">
+        <input class="field big emoji" name="emoji" maxlength="8" placeholder="💧">
+        <input class="field big" name="name" data-i18n-ph="habit.namePh" enterkeyhint="done">
+      </div>
+      <div class="group">
+        <div class="row"><span data-i18n="item.colour"></span><span class="swatches" id="habitSwatches"></span></div>
+        <div class="row"><span data-i18n="habit.days"></span><span class="daypick" id="dayPick"></span></div>
+      </div>
+      <button type="button" class="danger" id="habitDelete" data-action="delete-habit" data-i18n="common.delete">Delete</button>
+    </form>
+  </div>
+
+  <!-- list entry sheet -->
+  <div id="entrySheet" class="overlay" hidden>
+    <form id="entryForm" class="sheet" autocomplete="off">
+      <div class="sheet-head">
+        <button type="button" class="pill ghost" data-action="close" data-i18n="common.cancel">Cancel</button>
+        <h2 id="entryTitle"></h2>
+        <button type="submit" class="pill strong" data-i18n="common.save">Save</button>
+      </div>
+      <div class="entry-top">
+        <button type="button" class="cover-pick" id="coverPick" data-action="cover-pick"></button>
+        <div class="entry-fields">
+          <input class="field big" name="title" data-i18n-ph="entry.titlePh" enterkeyhint="done">
+          <div class="stars" id="stars"></div>
+          <button type="button" class="link" id="coverRemove" data-action="cover-remove" data-i18n="entry.removeCover"></button>
+        </div>
+      </div>
+      <div class="seg status-seg" id="statusSeg"></div>
+      <div class="group">
+        <label class="row"><span data-i18n="entry.collection"></span><select name="col" class="field inline" id="entryCol"></select></label>
+      </div>
+      <textarea class="field" name="note" rows="3" data-i18n-ph="entry.note" style="margin-top:14px"></textarea>
+      <button type="button" class="danger" id="entryDelete" data-action="delete-entry" data-i18n="common.delete">Delete</button>
+    </form>
+  </div>
+
+  <!-- collection sheet -->
+  <div id="colSheet" class="overlay" hidden>
+    <form id="colForm" class="sheet small" autocomplete="off">
+      <div class="sheet-head">
+        <button type="button" class="pill ghost" data-action="close" data-i18n="common.cancel">Cancel</button>
+        <h2 id="colTitle"></h2>
+        <button type="submit" class="pill strong" data-i18n="common.save">Save</button>
+      </div>
+      <div class="name-row">
+        <input class="field big emoji" name="emoji" maxlength="8" placeholder="📚">
+        <input class="field big" name="name" data-i18n-ph="colsheet.namePh" enterkeyhint="done">
+      </div>
+      <button type="button" class="danger" id="colDelete" data-action="delete-col" data-i18n="common.delete">Delete</button>
+    </form>
+  </div>
+
+  <!-- sticker picker -->
+  <div id="stickerSheet" class="overlay" hidden>
+    <div class="sheet">
+      <div class="sheet-head">
+        <span class="spacer-w"></span>
+        <h2 data-i18n="stickers.title"></h2>
+        <button type="button" class="pill strong" data-action="close" data-i18n="common.done">Done</button>
+      </div>
+      <div id="stickerGrid"></div>
+      <button type="button" class="pill wide" data-action="sticker-import">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="stickers.add"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- settings -->
+  <div id="settingsSheet" class="overlay" hidden>
+    <div class="sheet">
+      <div class="sheet-head">
+        <span class="spacer-w"></span>
+        <h2 data-i18n="settings.title"></h2>
+        <button type="button" class="pill strong" data-action="close" data-i18n="common.done">Done</button>
+      </div>
+
+      <h3 class="sec" data-i18n="settings.background"></h3>
+      <div class="themes" id="themes"></div>
+      <button type="button" class="pill wide" data-action="photo-pick">
+        <svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4.5 3.5 3 3-2.5 4.5 4"/></svg>
+        <span data-i18n="settings.photo"></span>
+      </button>
+      <div class="group" id="photoControls">
+        <label class="row"><span data-i18n="settings.blur"></span><input type="range" id="blurRange" min="0" max="40" step="1"></label>
+        <label class="row"><span data-i18n="settings.dim"></span><input type="range" id="dimRange" min="0" max="80" step="1"></label>
+      </div>
+
+      <h3 class="sec" data-i18n="settings.language"></h3>
+      <div class="seg lang-seg" id="langSeg"></div>
+
+      <h3 class="sec" data-i18n="settings.data"></h3>
+      <div class="group menu-list">
+        <button type="button" class="row" data-action="export" data-i18n="settings.export"></button>
+        <button type="button" class="row" data-action="import" data-i18n="settings.import"></button>
+        <button type="button" class="row" data-action="clear-done" data-i18n="settings.clearDone"></button>
+      </div>
+      <p class="menu-hint" id="installHint" data-i18n="settings.install"></p>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status"></div>
+  <input type="file" id="importFile" accept="application/json,.json" hidden>
+  <input type="file" id="photoFile" accept="image/*" hidden>
+  <input type="file" id="coverFile" accept="image/*" hidden>
+  <input type="file" id="stickerFile" accept="image/*" multiple hidden>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
