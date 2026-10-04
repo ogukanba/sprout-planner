@@ -1,5 +1,5 @@
 // Bump this when you change files so installed copies refresh their cache.
-const CACHE = 'sprout-v3';
+const CACHE = 'sprout-v5';
 const ASSETS = [
   './', './index.html', './styles.css', './app.js', './store.js', './i18n.js', './decor.js', './stickers.js',
   './manifest.webmanifest', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png',

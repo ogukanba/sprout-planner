@@ -310,12 +310,13 @@ function evBlock(ev, ds, mode, hh, base) {
   }
   const style = `--c:${colorOf(it)};top:${top}px;height:${height}px;left:${left};width:${width};z-index:${Math.min(lane + 1, 5)}`;
   if (mode === 'week') {
-    return `<div class="ev ${done ? 'done' : ''}" style="${style}" data-action="edit" data-id="${it.id}"><div class="title">${esc(it.title)}</div></div>`;
+    return `<div class="ev ${done ? 'done' : ''}" style="${style}" data-action="edit" data-id="${it.id}"><div class="title">${esc(it.title)}</div><span class="ev-resize"></span></div>`;
   }
   const density = height < 56 ? 'short' : height < 76 ? 'compact' : '';
   return `<div class="ev ${done ? 'done' : ''} ${density}" style="${style}" data-action="edit" data-id="${it.id}">
     ${checkBtn(it, ds, done)}<span class="bar"></span>
     <div class="tx"><div class="title">${esc(it.title)}</div>${metaHtml(it, true)}</div>
+    <span class="ev-resize"></span>
   </div>`;
 }
 
@@ -1143,6 +1144,184 @@ main.addEventListener('touchend', (e) => {
   if (Math.abs(dx) > 80 && Math.abs(dy) < 50) step(dx < 0 ? 1 : -1);
 }, { passive: true });
 
+// ---------- drag to move / resize on the timeline ----------
+// Events: drag to move (snaps to 15 min), drag the bottom grip to resize.
+// Day view: drag a loose task from the side panel onto the timeline to schedule it.
+// Week view: drag sideways to move a one-off event to another day.
+const SNAP = 15;
+const snap = (m) => Math.round(m / SNAP) * SNAP;
+let drag = null;
+let suppressClick = false;
+
+const timelineCols = () => [...main.querySelectorAll('.timeline .col')];
+function colAt(x, y, ignoreY) {
+  return timelineCols().find((c) => {
+    const r = c.getBoundingClientRect();
+    return x >= r.left && x < r.right && (ignoreY || (y >= r.top && y < r.bottom));
+  });
+}
+function minuteAt(col, y) {
+  const base = +col.closest('.timeline').dataset.start;
+  return base + ((y - col.getBoundingClientRect().top) / HOUR_PX[ui.view]) * 60;
+}
+
+main.addEventListener('pointerdown', (e) => {
+  if (ui.decorating || drag || !['day', 'week'].includes(ui.view) || e.button > 0) return;
+  if (e.target.closest('.check')) return;
+  const evEl = e.target.closest('.ev');
+  const taskEl = !evEl && ui.view === 'day' ? e.target.closest('.side .task') : null;
+  const it = (evEl || taskEl) && find((evEl || taskEl).dataset.id);
+  if (!it) return;
+  drag = {
+    it, el: evEl || taskEl, fromSide: !!taskEl,
+    mode: e.target.closest('.ev-resize') ? 'resize' : 'move',
+    id: e.pointerId, type: e.pointerType,
+    x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY,
+    scroll0: main.scrollTop, active: false,
+  };
+  if (evEl) {
+    drag.s0 = toMin(it.start);
+    drag.e0 = it.end ? toMin(it.end) : drag.s0 + 60;
+    if (drag.e0 <= drag.s0) drag.e0 = drag.s0 + 60;
+    drag.base = +evEl.closest('.timeline').dataset.start;
+  }
+  // A finger needs a short press first so ordinary scrolling still works; Pencil and mouse drag right away.
+  if (e.pointerType === 'touch' && drag.mode === 'move') drag.timer = setTimeout(startDrag, 260);
+});
+
+function startDrag() {
+  if (!drag || drag.active) return;
+  drag.active = true;
+  touch = null; // not a swipe between days
+  drag.el.classList.add('dragging');
+  if (drag.fromSide) {
+    const r = drag.el.getBoundingClientRect();
+    const g = drag.el.cloneNode(true);
+    g.classList.add('drag-ghost');
+    g.classList.remove('dragging');
+    Object.assign(g.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px' });
+    document.body.appendChild(g);
+    drag.ghost = g;
+  }
+  requestAnimationFrame(autoScroll);
+}
+
+function updateDrag() {
+  const d = drag;
+  const hh = HOUR_PX[ui.view];
+  if (d.fromSide) {
+    d.ghost.style.transform = `translate(${d.x - d.x0}px, ${d.y - d.y0}px) scale(1.03)`;
+    const col = colAt(d.x, d.y);
+    if (col) {
+      const base = +col.closest('.timeline').dataset.start;
+      d.target = { col, m: Math.max(base, Math.min(1380, snap(minuteAt(col, d.y) - 20))) };
+      d.ghost.dataset.time = fromMin(d.target.m);
+    } else {
+      d.target = null;
+      d.ghost.dataset.time = '';
+    }
+    return;
+  }
+  const delta = ((d.y - d.y0 + main.scrollTop - d.scroll0) / hh) * 60;
+  let s = d.s0, en = d.e0;
+  if (d.mode === 'resize') {
+    en = Math.max(s + SNAP, Math.min(1440, snap(d.e0 + delta)));
+  } else {
+    const dur = d.e0 - d.s0;
+    s = Math.max(d.base, Math.min(1440 - dur, snap(d.s0 + delta)));
+    en = s + dur;
+  }
+  if (ui.view === 'week') {
+    if (d.mode === 'move' && !isRecurring(d.it)) {
+      const col = colAt(d.x, d.y, true);
+      if (col && col !== d.el.parentElement) col.appendChild(d.el);
+    }
+    Object.assign(d.el.style, { left: '3px', width: 'calc(100% - 6px)' });
+  }
+  d.s = s;
+  d.e = en;
+  d.el.style.top = (((s - d.base) / 60) * hh + 1) + 'px';
+  d.el.style.height = (Math.max(((en - s) / 60) * hh, ui.view === 'week' ? 26 : 46) - 3) + 'px';
+  d.el.dataset.time = `${fromMin(s)}–${fromMin(Math.min(en, 1439))}`;
+}
+
+// Scroll the page while the dragged item is held near the top or bottom edge.
+function autoScroll() {
+  if (!drag || !drag.active) return;
+  const r = main.getBoundingClientRect();
+  const sticky = main.querySelector('.sticky');
+  const top = r.top + (sticky ? sticky.offsetHeight : 0) + 50;
+  const bottom = r.bottom - 110;
+  const v = drag.y < top ? -Math.min(14, (top - drag.y) / 4 + 2) : drag.y > bottom ? Math.min(14, (drag.y - bottom) / 4 + 2) : 0;
+  if (v) {
+    main.scrollTop += v;
+    updateDrag();
+  }
+  requestAnimationFrame(autoScroll);
+}
+
+window.addEventListener('pointermove', (e) => {
+  if (!drag || e.pointerId !== drag.id) return;
+  drag.x = e.clientX;
+  drag.y = e.clientY;
+  if (!drag.active) {
+    const moved = Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0);
+    if (drag.type === 'touch' && drag.mode === 'move') {
+      if (moved > 10) cancelDrag(); // moved before the press registered: it's a scroll
+      return;
+    }
+    if (moved < 4) return;
+    startDrag();
+  }
+  updateDrag();
+});
+
+window.addEventListener('pointerup', (e) => {
+  if (!drag || e.pointerId !== drag.id) return;
+  clearTimeout(drag.timer);
+  const d = drag;
+  drag = null;
+  if (!d.active) return; // a plain tap: let the click open the editor
+  suppressClick = true;
+  setTimeout(() => { suppressClick = false; }, 400);
+  if (d.ghost) d.ghost.remove();
+  const it = d.it;
+  if (d.fromSide) {
+    if (d.target) {
+      it.start = fromMin(d.target.m);
+      it.end = fromMin(Math.min(d.target.m + 60, 1439));
+      if (!isRecurring(it)) it.date = d.target.col.dataset.col;
+    }
+  } else if (d.s != null) {
+    it.start = fromMin(d.s);
+    it.end = fromMin(Math.min(d.e, 1439));
+    const day = d.el.closest('.col')?.dataset.col;
+    if (day && !isRecurring(it)) it.date = day;
+  }
+  save();
+  render();
+});
+
+function cancelDrag() {
+  if (!drag) return;
+  clearTimeout(drag.timer);
+  if (drag.ghost) drag.ghost.remove();
+  const wasActive = drag.active;
+  drag = null;
+  if (wasActive) render();
+}
+window.addEventListener('pointercancel', (e) => { if (drag && e.pointerId === drag.id) cancelDrag(); });
+
+// While dragging with a finger, stop iOS from scrolling the page underneath.
+main.addEventListener('touchmove', (e) => { if (drag && drag.active) e.preventDefault(); }, { passive: false });
+// The click that follows a drag shouldn't open the editor.
+document.addEventListener('click', (e) => {
+  if (!suppressClick) return;
+  suppressClick = false;
+  e.stopPropagation();
+  e.preventDefault();
+}, true);
+
 // Re-layout on rotation (decor scales with width).
 let lastWidth = main.clientWidth;
 let resizeTimer;
@@ -1156,7 +1335,7 @@ window.addEventListener('resize', () => {
 // Keep the "now" line moving and roll over at midnight or when the app is reopened.
 let lastDay = todayStr();
 function tick() {
-  if (ui.decorating) return;
+  if (ui.decorating || drag) return;
   if (todayStr() !== lastDay) {
     if (ui.cursor === lastDay) ui.cursor = todayStr();
     lastDay = todayStr();

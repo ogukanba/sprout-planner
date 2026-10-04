@@ -23,8 +23,16 @@
 [hidden] { display: none !important; }
 
 /* ---------- backgrounds ---------- */
-.bg { position: fixed; inset: 0; z-index: 0; overflow: hidden; transition: background 0.6s; }
-.bg-photo, .bg-dim { position: absolute; inset: 0; display: none; }
+/* Taller than the screen on purpose: on iPad Home Screen apps a plain inset:0 layer can stop short of
+   the area under the home indicator and leave a dark strip. */
+.bg { position: fixed; top: 0; left: 0; right: 0; height: calc(100vh + 120px); height: calc(100lvh + 120px); z-index: 0; overflow: hidden; transition: background 0.6s; }
+html[data-theme="dusk"], html[data-theme="dusk"] body { background: #181312; }
+html[data-theme="midnight"], html[data-theme="midnight"] body { background: #12132a; }
+html[data-theme="aurora"], html[data-theme="aurora"] body { background: #2a1a7a; }
+html[data-theme="rose"], html[data-theme="rose"] body { background: #241519; }
+html[data-theme="forest"], html[data-theme="forest"] body { background: #111a17; }
+html[data-theme="photo"], html[data-theme="photo"] body { background: #111; }
+.bg-photo, .bg-dim { position: absolute; inset: -60px 0; display: none; }
 .bg-photo { background-size: cover; background-position: center; }
 .bg-dim { background: #000; }
 [data-theme="photo"] .bg { background: #111; }
@@ -336,6 +344,53 @@ main {
 .ev .bar { align-self: stretch; width: 2.5px; border-radius: 3px; background: var(--c); flex: none; margin: 4px 0; }
 .ev .check { order: -1; }
 .ev.compact .meta + .meta { display: none; }
+.ev, .task { -webkit-touch-callout: none; }
+
+/* drag to move / resize */
+.ev-resize { position: absolute; left: 0; right: 0; bottom: 0; height: 16px; cursor: ns-resize; touch-action: none; }
+.ev-resize::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  width: 26px;
+  height: 4px;
+  margin-left: -13px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.22);
+}
+.timeline.week .ev-resize { height: 10px; }
+.timeline.week .ev-resize::after { width: 16px; height: 3px; margin-left: -8px; bottom: 3px; }
+.ev.dragging {
+  z-index: 30 !important;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.02);
+}
+.ev.dragging::after, .drag-ghost::after {
+  content: attr(data-time);
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.5);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+.ev.dragging[data-time=""]::after, .drag-ghost[data-time=""]::after, .drag-ghost:not([data-time])::after { display: none; }
+.timeline.week .ev.dragging::after { top: auto; bottom: 4px; right: 4px; font-size: 10px; padding: 1px 5px; }
+.task.dragging { opacity: 0.35; }
+.drag-ghost {
+  position: fixed;
+  z-index: 40;
+  margin: 0;
+  pointer-events: none;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+  transform-origin: center;
+}
 .ev.short .meta { display: none; }
 
 .timeline.week .ev { border-radius: 10px; padding: 7px 6px 6px; display: block; box-shadow: none; }
