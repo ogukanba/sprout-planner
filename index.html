@@ -32,6 +32,11 @@
 
       <div class="spacer"></div>
 
+      <button class="icon-btn" id="lockBtn" data-action="lock" data-i18n-aria="lock.label">
+        <svg viewBox="0 0 24 24" class="lock-on"><rect x="5" y="10.5" width="14" height="10" rx="3"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg>
+        <svg viewBox="0 0 24 24" class="lock-off"><rect x="5" y="10.5" width="14" height="10" rx="3"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 6.8-1.2"/></svg>
+      </button>
+
       <button class="pill" id="decorBtn" data-action="decorate">
         <svg viewBox="0 0 24 24"><path d="M4 20l1.2-4.4L15.8 5a2 2 0 0 1 2.8 0l.4.4a2 2 0 0 1 0 2.8L8.4 18.8z"/><path d="M14 7l3 3"/><path d="M19 15.5l.7 1.6 1.6.7-1.6.7-.7 1.6-.7-1.6-1.6-.7 1.6-.7z" class="fill"/></svg>
         <span data-i18n="decor.button">Decorate</span>
@@ -129,9 +134,10 @@
         <button type="submit" class="pill strong" data-i18n="common.save">Save</button>
       </div>
       <div class="name-row">
-        <input class="field big emoji" name="emoji" maxlength="8" placeholder="💧">
+        <input class="field big emoji" name="emoji" placeholder="💧">
         <input class="field big" name="name" data-i18n-ph="habit.namePh" enterkeyhint="done">
       </div>
+      <div class="emoji-pick"></div>
       <div class="group">
         <div class="row"><span data-i18n="item.colour"></span><span class="swatches" id="habitSwatches"></span></div>
         <div class="row"><span data-i18n="habit.days"></span><span class="daypick" id="dayPick"></span></div>
@@ -174,9 +180,10 @@
         <button type="submit" class="pill strong" data-i18n="common.save">Save</button>
       </div>
       <div class="name-row">
-        <input class="field big emoji" name="emoji" maxlength="8" placeholder="📚">
+        <input class="field big emoji" name="emoji" placeholder="📚">
         <input class="field big" name="name" data-i18n-ph="colsheet.namePh" enterkeyhint="done">
       </div>
+      <div class="emoji-pick"></div>
       <button type="button" class="danger" id="colDelete" data-action="delete-col" data-i18n="common.delete">Delete</button>
     </form>
   </div>

@@ -66,7 +66,7 @@ function dropBlob(id) {
 const stickerSrc = (src) => BUILTIN_STICKERS[src] || urls.get(src) || '';
 
 // ---------- settings ----------
-const settings = { theme: ls.get('dusk-planner-theme') || 'dusk', photo: '', blur: 14, dim: 30, lang: detectLang(), finger: false, ...ls.json(SETTINGS_KEY, {}) };
+const settings = { theme: ls.get('dusk-planner-theme') || 'dusk', photo: '', blur: 14, dim: 30, lang: detectLang(), finger: false, lock: true, ...ls.json(SETTINGS_KEY, {}) };
 const saveSettings = () => ls.set(SETTINGS_KEY, JSON.stringify(settings));
 setLang(settings.lang);
 decor.opts.finger = settings.finger;
@@ -524,6 +524,9 @@ function render() {
   const navOn = ['day', 'week', 'month', 'habits'].includes(ui.view);
   $('.nav-date').classList.toggle('hidden', !navOn);
   $('#decorBtn').hidden = !decorKey();
+  $('#lockBtn').hidden = !['day', 'week'].includes(ui.view) || ui.decorating;
+  $('#lockBtn').classList.toggle('unlocked', !settings.lock);
+  document.body.classList.toggle('tl-locked', settings.lock);
   document.body.classList.toggle('decorating', ui.decorating);
 
   const keep = main.scrollTop;
@@ -716,6 +719,29 @@ function newAt(col, e) {
   syncSheet();
 }
 
+// ---------- emoji palette (habit + list sheets) ----------
+// Tappable emoji, so picking one doesn't depend on finding the emoji keyboard on iPad.
+const EMOJI = {
+  habitForm: ['💧', '📖', '🏃‍♀️', '🧘‍♀️', '💪', '🚶‍♀️', '🥗', '🍎', '😴', '🛏️', '🦷', '💊', '🧴', '🪥', '📝', '✍️', '📚', '🎧', '🎹', '🎨', '🌱', '🪴', '🧹', '🧺', '☀️', '🌙', '📵', '💰', '🗣️', '❤️', '⭐', '✨'],
+  colForm: ['📚', '🎮', '🎬', '📺', '🎧', '🎵', '🍿', '🌸', '🦊', '🍜', '☕', '🍰', '✈️', '🗺️', '🎁', '🛍️', '👗', '💄', '🧶', '🎨', '📷', '🎲', '🧩', '⭐', '✨', '❤️', '🌱', '📝'],
+};
+const segmenter = typeof Intl !== 'undefined' && Intl.Segmenter ? new Intl.Segmenter() : null;
+// Keep just the first symbol, so a stray extra character can't break the icon.
+function firstEmoji(s) {
+  s = s.trim();
+  if (!s) return '';
+  return segmenter ? segmenter.segment(s)[Symbol.iterator]().next().value.segment : [...s].slice(0, 2).join('');
+}
+for (const [formId, list] of Object.entries(EMOJI)) {
+  const form = $('#' + formId);
+  form.querySelector('.emoji-pick').innerHTML = list.map((em) => `<button type="button" data-action="emoji-pick" data-emoji="${em}">${em}</button>`).join('');
+  form.elements.emoji.addEventListener('input', () => syncEmojiPick(form));
+}
+function syncEmojiPick(form) {
+  const cur = firstEmoji(form.elements.emoji.value);
+  form.querySelectorAll('.emoji-pick button').forEach((b) => b.classList.toggle('sel', b.dataset.emoji === cur));
+}
+
 // ---------- habit sheet ----------
 const hForm = $('#habitForm');
 let habitDraft = null;
@@ -727,6 +753,7 @@ function openHabit(h) {
   $('#habitTitle').textContent = t(h ? 'habit.edit' : 'habit.new');
   $('#habitDelete').hidden = !h;
   syncHabitSheet();
+  syncEmojiPick(hForm);
   openOverlay('#habitSheet');
   if (!h) hForm.elements.name.focus();
 }
@@ -748,7 +775,7 @@ hForm.addEventListener('submit', (e) => {
   const name = hForm.elements.name.value.trim();
   if (!name) { hForm.elements.name.focus(); toast(t('item.nameFirst')); return; }
   habitDraft.name = name;
-  habitDraft.emoji = hForm.elements.emoji.value.trim();
+  habitDraft.emoji = firstEmoji(hForm.elements.emoji.value);
   const i = data.habits.findIndex((x) => x.id === habitDraft.id);
   if (i >= 0) data.habits[i] = habitDraft; else data.habits.push(habitDraft);
   save();
@@ -856,6 +883,7 @@ function openCol(c) {
   cForm.elements.emoji.value = c ? c.emoji : '';
   $('#colTitle').textContent = t(c ? 'colsheet.edit' : 'colsheet.new');
   $('#colDelete').hidden = !c;
+  syncEmojiPick(cForm);
   openOverlay('#colSheet');
   if (!c) cForm.elements.name.focus();
 }
@@ -863,7 +891,7 @@ cForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const name = cForm.elements.name.value.trim();
   if (!name) { cForm.elements.name.focus(); toast(t('item.nameFirst')); return; }
-  const emoji = cForm.elements.emoji.value.trim() || '✨';
+  const emoji = firstEmoji(cForm.elements.emoji.value) || '✨';
   const c = data.collections.find((x) => x.id === colDraftId);
   if (c) {
     // Keep built-in lists translatable until they're actually renamed.
@@ -1057,6 +1085,18 @@ document.addEventListener('click', (e) => {
     case 'toggle': toggle(id, date); break;
     case 'edit': openSheet(find(id)); break;
     case 'new': onNew(); break;
+    case 'lock':
+      settings.lock = !settings.lock;
+      saveSettings();
+      toast(t(settings.lock ? 'lock.on' : 'lock.off'));
+      render();
+      break;
+    case 'emoji-pick': {
+      const input = a.closest('form').elements.emoji;
+      input.value = a.dataset.emoji;
+      syncEmojiPick(a.closest('form'));
+      break;
+    }
     case 'prev': step(-1); break;
     case 'next': step(1); break;
     case 'today': ui.cursor = todayStr(); ui.resetScroll = true; render(); break;
@@ -1169,6 +1209,7 @@ main.addEventListener('pointerdown', (e) => {
   if (ui.decorating || drag || !['day', 'week'].includes(ui.view) || e.button > 0) return;
   if (e.target.closest('.check')) return;
   const evEl = e.target.closest('.ev');
+  if (evEl && settings.lock) return; // locked: events stay put, a tap still opens them
   const taskEl = !evEl && ui.view === 'day' ? e.target.closest('.side .task') : null;
   const it = (evEl || taskEl) && find((evEl || taskEl).dataset.id);
   if (!it) return;

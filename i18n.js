@@ -26,6 +26,7 @@ const en = {
   'habits.streak': '{n}-day streak', 'habits.month': '{n}% this month',
   'habit.new': 'New habit', 'habit.edit': 'Edit habit', 'habit.namePh': 'e.g. Drink water', 'habit.days': 'Days',
   'habit.confirmDelete': 'Delete the habit "{name}" and its history?',
+  'lock.label': 'Lock timeline', 'lock.on': 'Timeline locked — tasks won’t move', 'lock.off': 'Timeline unlocked — drag to move or resize',
 
   'lists.empty': 'Nothing here yet. Tap New to add something.', 'lists.all': 'All',
   'status.planned': 'Planned', 'status.ongoing': 'In progress', 'status.completed': 'Completed', 'status.dropped': 'Dropped',
@@ -75,6 +76,7 @@ const ru = {
   'habits.month': '{n}% за месяц',
   'habit.new': 'Новая привычка', 'habit.edit': 'Изменить привычку', 'habit.namePh': 'Например, пить воду', 'habit.days': 'Дни',
   'habit.confirmDelete': 'Удалить привычку «{name}» вместе с историей?',
+  'lock.label': 'Закрепить расписание', 'lock.on': 'Расписание закреплено — задачи не сдвинутся', 'lock.off': 'Расписание откреплено — задачи можно двигать и растягивать',
 
   'lists.empty': 'Здесь пока пусто. Нажмите «Новое», чтобы добавить.', 'lists.all': 'Все',
   'status.planned': 'В планах', 'status.ongoing': 'В процессе', 'status.completed': 'Завершено', 'status.dropped': 'Брошено',
@@ -123,6 +125,7 @@ const ja = {
   'habits.streak': '{n}日連続', 'habits.month': '今月 {n}%',
   'habit.new': '新しい習慣', 'habit.edit': '習慣を編集', 'habit.namePh': '例：水を飲む', 'habit.days': '曜日',
   'habit.confirmDelete': '習慣「{name}」と記録を削除しますか？',
+  'lock.label': 'タイムラインをロック', 'lock.on': 'タイムラインをロックしました', 'lock.off': 'ロック解除 — ドラッグで移動・長さ変更',
 
   'lists.empty': 'まだ何もありません。「新規」から追加しましょう。', 'lists.all': 'すべて',
   'status.planned': '予定', 'status.ongoing': '進行中', 'status.completed': '完了', 'status.dropped': '中断',
